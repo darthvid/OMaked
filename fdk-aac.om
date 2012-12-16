@@ -1,0 +1,14 @@
+
+
+.PHONY: configure build install
+
+configure:
+ autoreconf -fiv
+ ./configure --disable-shared
+
+build:
+ make
+
+install:
+ sudo checkinstall --pkgname=fdk-aac --pkgversion="$(date +%Y%m%d%H%M)-git" --backup=no \
+  --deldoc=yes --fstrans=no --default

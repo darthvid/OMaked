@@ -15,72 +15,105 @@
 # THE USE OR OTHER DEALINGS IN THE FILE.
 
 ########################################################################
-# The standard OMakefile.
-# You will usually need to modify this file for your project.
+#Inspired by https://ffmpeg.org/trac/ffmpeg/wiki/UbuntuCompilationGuide
 
-# Delete this line once you have configured this file
-#eprintln($(CWD)/OMakefile is not configured)
-
+#OMake Powered by David LE BLOND <david.le.blond.95@gmail.com>
 ########################################################################
 # Phony targets are scoped, so you probably want to declare them first.
 #
 
-.PHONY: all install clean
-
-########################################################################
-# Subdirectories.
-# You may want to include some subdirectories in this project.
-# If so, define the subdirectory targets and uncomment this section.
-#
-
-# .SUBDIRS:
-
-########################################################################
-# C configuration.
-# Delete this section if you are not building C files.
-#
-
-################################################
-# Configuration.  You might want to modify any of these
-# configuration variables.
-#
-
-# CFLAGS +=
-# ASFLAGS +=
-# LDFLAGS +=
-# INCLUDES +=
-
-################################################
-# Uncomment the following section if you want
-# to build a C program in the current directory.
-#
-
-# CFILES[] =
-#    file1
-#    main
-#
-# MAIN = main
-#
-# .DEFAULT: $(CProgram $(MAIN), $(CFILES))
-
-################################################
-# Uncomment the following section if you want to build a C library
-# in the current directory.
-#
-
-# LIBFILES[] =
-#    file1
-#    file2
-#
-# LIB = libxxx
-#
-# .DEFAULT: $(StaticCLibrary $(LIB), $(LIBFILES))
+.PHONY: all install clean dependencies usage remove_all complete_clean getfdk-aac getlibvpx getffmpeg getvlc
 
 ########################################################################
 # My configuration.
-# Delete this section if you are not building any files.
 #
-
+UBUNTU=
+#
 ################################################
 
-.SUBDIRS: ffmpeg  rtmpdump  vlc  x264
+CONFIGURE_FLAGS[]=
+# --prefix=/usr 
+# --libdir=/usr/lib64 #uncomment if your system is 64 bit
+
+dependencies:
+ sudo apt-get update
+ if $(defined UBUNTU) 
+  sudo apt-get -y install autoconf build-essential checkinstall git libfaac-dev libgpac-dev \
+  libmp3lame-dev libopencore-amrnb-dev libopencore-amrwb-dev librtmp-dev libtheora-dev \
+  libtool libvorbis-dev pkg-config texi2html yasm zlib1g-dev
+ else
+   sudo apt-get -y install autoconf build-essential checkinstall git libfaac-dev libgpac-dev \
+  libjack-jackd2-dev libmp3lame-dev libopencore-amrnb-dev libopencore-amrwb-dev \
+  librtmp-dev libsdl1.2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev \
+  libx11-dev libxext-dev libxfixes-dev pkg-config texi2html yasm zlib1g-dev
+
+
+YASM=yasm
+ASM=$(YASM)
+$(if $(VERBOSE))
+ echo $(ASM) --version
+ #TODO: check yasm version > 0.6.0
+
+OMADE=./fdk-aac/OMakefile
+
+getfdk-aac: $(OMADE)
+ git clone --depth 1 git://github.com/mstorsjo/fdk-aac.git
+ cp fdk-aac.om ./fdk-aac/OMakefile
+
+OMADE=./libvpx/OMakefile
+
+getlibvpx: $(OMADE)
+ git clone --depth 1 http://git.chromium.org/webm/libvpx.git
+ cp libvpx.om ./libvpx/OMakefile
+
+OMADE=./ffmpeg/OMakefile
+
+getffmpeg: $(OMADE)
+ git clone --depth 1 git://source.ffmpeg.org/ffmpeg
+ cp ffmpeg.om ./ffmpeg/OMakefile
+
+OMADE=./libaacplus/OMakefile
+
+getlibaacplus: libaacplus/download $(OMADE)
+ cp libaacplus.om ./libaacplus/OMakefile
+
+getvlc:
+
+fresh: getlibaacplus getlibvpx getffmpeg getfdk-aac getvlc
+
+# build scenarii
+.PHONY+= ffmpeg_libvpx ffmpeg_libaacplus ffmpeg_x264 ffmpeg_x264_libaacplus ffmpeg_x264_libvpx ffmpeg_libvpx_libaacplus
+
+# what's interesting
+ffmpeg_libvpx: libvpx
+
+ffmpeg_libaacplus: libaacplus
+
+ffmpeg_x264: x264
+
+ffmpeg_libvpx_libaacplus: libvpx libaacplus
+
+ffmpeg_x264_libaacplus: x264 libaacplus
+
+#And finally, the best of all
+ffmpeg_x264_libvpx_libaacplus: x264 libvpx libaacplus
+
+all: ffmpeg_x264_libvpx_libaacplus
+ echo $'Well done !!'
+
+complete_clean:
+ sudo apt-get remove ffmpeg x264 libav-tools libvpx-dev libx264-dev
+
+remove_all:
+ sudo apt-get -y autoremove autoconf build-essential checkinstall fdk-aac ffmpeg git libfaac-dev libgpac-dev \
+  libjack-jackd2-dev libmp3lame-dev librtmp-dev libsdl1.2-dev libtheora-dev libtool libva-dev libvdpau-dev \
+  libvorbis-dev libvpx libx11-dev libxfixes-dev pkg-config qt-faststart texi2html x264 yasm zlib1g-dev
+
+  #rm -rf x264 fdk-aac libvpx ffmpeg
+
+usage:
+ echo $''grep .PHONY''
+
+.DEFAULT: usage
+
+.SUBDIRS: x264 ffmpeg vlc libaacplus libvpx #rtmpdump   	

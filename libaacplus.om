@@ -1,0 +1,32 @@
+
+.PHONY: update configure download build install clean
+
+update:
+ make clean
+ git pull
+
+$(if $(bot $(defined VERSION_LIBAACPLUS))) 
+ VERSION_LIBAACPLUS=2.0.2
+
+ARCHIVE_LIBAACPLUS=libaacplus-$(VERSION_LIBAACPLUS).tar.gz
+
+download:
+ wget http://217.20.164.161/~tipok/aacplus/$(ARCHIVE_LIBAACPLUS)
+
+extract: download
+ tar -xf $(ARCHIVE_LIBAACPLUS)
+ cd libaacplus-$(VERSION_LIBAACPLUS)
+
+configure: 
+ ./autogen.sh --enable-shared
+
+build:
+ make
+
+install:
+ sudo checkinstall --pakdir "$HOME/Desktop" --pkgname libaacplus \
+ --pkgversion $(VERSION_LIBAACPLUS) \
+ --backup=no --default --deldoc=yes --fstrans=no && sudo ldconfig
+
+clean:
+ make clean

@@ -1,0 +1,19 @@
+
+.PHONY: update configure build install
+
+update:
+ make clean
+ git pull
+
+configure:
+ ./configure
+
+build: 
+ make
+
+install:
+ sudo checkinstall --pkgname=libvpx --pkgversion="1:$(date +%Y%m%d%H%M)-git" --backup=no \
+  --deldoc=yes --fstrans=no --default
+
+clean:
+ make clean

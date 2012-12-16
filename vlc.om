@@ -1,0 +1,10 @@
+
+
+.PHONY: update clean
+
+update:
+ make distclean
+ git pull
+
+clean:
+ make clean

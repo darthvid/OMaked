@@ -1,0 +1,71 @@
+
+.PHONY: extract configure build install update ffmpeg qt-faststart
+
+update:
+ make distclean
+ git pull
+
+#TODO: check which/if compilator is installed
+#YASM=yasm
+#NASM=nasm
+#XASM=xasm
+
+extract:
+ tar -xzvf ffmepg.tar.gz
+
+FFMPEG_FLAGS[]=
+ --enable-gpl 
+ --enable-libfaac 
+ --enable-libfdk-aac #TODO filter this with an option 
+ --enable-libmp3lame
+ --enable-libopencore-amrnb 
+ --enable-libopencore-amrwb 
+ --enable-librtmp 
+ --enable-libtheora
+ --enable-libvorbis 
+ --enable-libvpx #TODO filter this with an option
+ --enable-x11grab 
+ --enable-libx264 #TODO filter this with an option
+ --enable-nonfree #TODO filter this with an option
+ --enable-version3
+ --enable-libaacplus #TODO filter this with an option
+
+#TODO: Options à tester
+# --enable-pthread 
+# --enable-visualize 
+# --enable-pic 
+# --enable-shared
+# --enable-mp4-output
+# --extra-asflags="-fPIC"
+# --extra-cflags="-O4 
+# -march=k8 #-march=native 
+# -mtune=k8 -pipe -ffast-math -fomit-frame-pointer
+
+configure:
+ ./configure $(CONFIGURE_FLAGS) $(FFMPEG_FLAGS) 
+
+build: configure
+ make
+
+install: build
+ sudo checkinstall --pkgname=ffmpeg --pkgversion="7:$(date +%Y%m%d%H%M)-git" --backup=no \
+  --deldoc=yes --fstrans=no --default
+ hash x264 ffmpeg ffplay ffprobe
+
+ffmpeg: install
+
+# This utility rearranges a Quicktime file such that the moov atom
+# is in front of the data, thus facilitating network streaming.
+#
+#This is a useful tool if you're showing your H.264 in MP4 videos on the web. 
+#It relocates some data in the video to allow playback to begin before the file is completely downloaded. 
+#usage: qt-faststart input.mp4 output.mp4
+
+qt-faststart:
+ make tools/qt-faststart
+ sudo checkinstall --pkgname=qt-faststart --pkgversion="$(date +%Y%m%d%H%M)-git" --backup=no \
+  --deldoc=yes --fstrans=no --default install -Dm755 tools/qt-faststart \
+  /usr/local/bin/qt-faststart
+
+clean:
+ make clean
