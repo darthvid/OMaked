@@ -22,14 +22,17 @@
 # Phony targets are scoped, so you probably want to declare them first.
 #
 
-.PHONY: all install clean dependencies usage remove_all complete_clean getfdk-aac getlibvpx getffmpeg getvlc
+.PHONY: all install clean dependencies usage remove_all complete_clean get_fdk-aac clean_fdk-aac getlibvpx getffmpeg getvlc ffmpeg_libvpx ffmpeg_libaacplus ffmpeg_x264 ffmpeg_x264_libaacplus ffmpeg_x264_libvpx ffmpeg_libvpx_libaacplus getit
+
 
 ########################################################################
 # My configuration.
 #
 UBUNTU=
+ASM=$(YASM)
 #
 ################################################
+
 
 CONFIGURE_FLAGS[]=
 # --prefix=/usr 
@@ -47,43 +50,87 @@ dependencies:
   librtmp-dev libsdl1.2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev \
   libx11-dev libxext-dev libxfixes-dev pkg-config texi2html yasm zlib1g-dev
 
+# Assembler Compiler
+YASM_VERSION=$(YASM) --version
+NASM_VERSION=$(NASM) -version
 
-YASM=yasm
-ASM=$(YASM)
-$(if $(VERBOSE))
- echo $(ASM) --version
- #TODO: check yasm version > 0.6.0
+if $(VERBOSE)
+ echo Assembler version
+ $(YASM_VERSION)
+ $(NASM_VERSION) 
+#TODO: check yasm version > 0.6.0
 
-OMADE=./fdk-aac/OMakefile
 
-getfdk-aac: $(OMADE)
- git clone --depth 1 git://github.com/mstorsjo/fdk-aac.git
- cp fdk-aac.om ./fdk-aac/OMakefile
+################################################
 
-OMADE=./libvpx/OMakefile
+CP[]=cp -uv
+CP_FLAGS[]=
 
-getlibvpx: $(OMADE)
+if $(VERBOSE)
+ CP_FLAGS+=--verbose
+
+#Copy project.om to project/OMakefile
+export .RULE
+public.DeployOM(project) =
+ section
+  $(file $(project)/OMakefile): $(file $(project).om)
+   println($"in rule")
+   #$(CP) $(file $(project).om) $@
+   .SUBDIRS: $(project)
+  value $@
+
+################################################
+
+protocol_fdk-aac=$"git"
+site_fdk-aac=$"github.com"
+user_fdk-aac=$"mstorsjo"
+project_fdk-aac=$"fdk-aac"
+
+G=$(Git.new $(protocol_fdk-aac), $(site_fdk-aac), $(user_fdk-aac), $(project_fdk-aac))
+G.print()
+try
+ G.clone()
+default
+ 
+get_fdk-aac:
+ println($"About to get "$(project_fdk-aac))
+ $(CP) $(file $(project_fdk-aac).om) $(project_fdk-aac)/OMakefile
+ .SUBDIRS: $(project_fdk-aac)
+
+clean_fdk-aac:
+ section
+  rm -rf $(extension_fdk-aac)
+
+################################################
+
+protocol_libvpx=http
+site_libvpx=git.chromium.org
+extension_libvpx=libvpx
+user_livpx=webm
+
+getlibvpx:
  git clone --depth 1 http://git.chromium.org/webm/libvpx.git
  cp libvpx.om ./libvpx/OMakefile
 
 OMADE=./ffmpeg/OMakefile
 
-getffmpeg: $(OMADE)
+getffmpeg:
  git clone --depth 1 git://source.ffmpeg.org/ffmpeg
  cp ffmpeg.om ./ffmpeg/OMakefile
+ section
+  .SUBDIRS: x264 ffmpeg vlc libaacplus libvpx #rtmpdump 
 
 OMADE=./libaacplus/OMakefile
 
-getlibaacplus: libaacplus/download $(OMADE)
+getlibaacplus: libaacplus/download
  cp libaacplus.om ./libaacplus/OMakefile
+
 
 getvlc:
 
 fresh: getlibaacplus getlibvpx getffmpeg getfdk-aac getvlc
 
 # build scenarii
-.PHONY+= ffmpeg_libvpx ffmpeg_libaacplus ffmpeg_x264 ffmpeg_x264_libaacplus ffmpeg_x264_libvpx ffmpeg_libvpx_libaacplus
-
 # what's interesting
 ffmpeg_libvpx: libvpx
 
@@ -112,8 +159,8 @@ remove_all:
   #rm -rf x264 fdk-aac libvpx ffmpeg
 
 usage:
- echo $''grep .PHONY''
+ println ($"If you already have looked at the documentation you may grep .PHONY for a list of available commands")
 
 .DEFAULT: usage
 
-.SUBDIRS: x264 ffmpeg vlc libaacplus libvpx #rtmpdump   	
+

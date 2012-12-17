@@ -1,0 +1,25 @@
+Git. =
+ class Git
+
+ depth=1
+ protocol=git
+ site=github.com
+ user=
+ project=
+ 
+ new(protocol, site, user, project) =
+  this.protocol=$(protocol)
+  this.site=$(site)
+  this.project=$(project)
+  this.user=$(user)  
+  return $(this)
+ 
+ clone() =
+  git clone --depth $(this.depth) $""$(this.protocol)://$(site)/$(this.user)/$(this.project).git""
+ 
+ print() =
+  println ($(this.protocol)://$(this.site)/$(this.user)/$(this.project).git)
+
+
+
+
