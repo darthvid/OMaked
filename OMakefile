@@ -22,13 +22,25 @@
 # Phony targets are scoped, so you probably want to declare them first.
 #
 
-.PHONY: all install clean dependencies usage remove_all complete_clean get_fdk-aac clean_fdk-aac getlibvpx getffmpeg getvlc ffmpeg_libvpx ffmpeg_libaacplus ffmpeg_x264 ffmpeg_x264_libaacplus ffmpeg_x264_libvpx ffmpeg_libvpx_libaacplus getit
-
+.PHONY: all install clean dependencies usage remove_all complete_clean \
+get_fdk-aac clean_fdk-aac \
+getlibvpx \
+getffmpeg \
+getvlc \
+ffmpeg_libvpx \
+ffmpeg_libaacplus \
+ffmpeg_x264 \
+ffmpeg_x264_libaacplus \
+ffmpeg_x264_libvpx \
+ffmpeg_libvpx_libaacplus \
+getit
 
 ########################################################################
 # My configuration.
 #
 UBUNTU=
+YASM=yasm
+NASM=nasm
 ASM=$(YASM)
 #
 ################################################
@@ -63,8 +75,9 @@ if $(VERBOSE)
 
 ################################################
 
-CP[]=cp -uv
+CP=cp
 CP_FLAGS[]=
+
 
 if $(VERBOSE)
  CP_FLAGS+=--verbose
@@ -75,31 +88,61 @@ public.DeployOM(project) =
  section
   $(file $(project)/OMakefile): $(file $(project).om)
    println($"in rule")
-   #$(CP) $(file $(project).om) $@
+   $(CP) $(file $(project).om) $@
    .SUBDIRS: $(project)
   value $@
 
 ################################################
+
+global.depth=1
 
 protocol_fdk-aac=$"git"
 site_fdk-aac=$"github.com"
 user_fdk-aac=$"mstorsjo"
 project_fdk-aac=$"fdk-aac"
 
-G=$(Git.new $(protocol_fdk-aac), $(site_fdk-aac), $(user_fdk-aac), $(project_fdk-aac))
-G.print()
-try
- G.clone()
-default
- 
+
+#G=$(Git.new $(protocol_fdk-aac), $(site_fdk-aac), $(user_fdk-aac), $(project_fdk-aac))
+#G.print()
+#try
+ #G.clone()
+#default
+
+export
+GitClone(protocol,site,user,project) =
+ section
+  repo=$""$(protocol)://$(site)/$(user)/$(project).git"" 
+  println($(repo))
+  $(dir $(project))/.git: $(GIT_ENABLED)
+   git clone --depth $(depth) $""$(protocol)://$(site)/$(user)/$(project).git""
+  value $@
+
+export
+
+export
+CopyOM(source) =
+ section
+  $(file OMakefile): $(file $(source).om)
+   if(mkdir -p $(source))
+   cd $(source)
+   println($(fullname $@))
+   if $(not (test -e $@)) 
+    println($"Copy OMakefile for project"$(source))
+    $(CP) $(file $(source).om) $@
+  value $@
+
+################################################
+
 get_fdk-aac:
  println($"About to get "$(project_fdk-aac))
- $(CP) $(file $(project_fdk-aac).om) $(project_fdk-aac)/OMakefile
- .SUBDIRS: $(project_fdk-aac)
+ test=$(GitClone $(protocol_fdk-aac), $(site_fdk-aac), $(user_fdk-aac), $(project_fdk-aac))
+ println( $(test) )
+ CopyOM( $(project_fdk-aac) )
+ #.SUBDIRS: $(project_fdk-aac)
 
 clean_fdk-aac:
  section
-  rm -rf $(extension_fdk-aac)
+  rm -rf $(project_fdk-aac)
 
 ################################################
 
@@ -118,13 +161,13 @@ getffmpeg:
  git clone --depth 1 git://source.ffmpeg.org/ffmpeg
  cp ffmpeg.om ./ffmpeg/OMakefile
  section
-  .SUBDIRS: x264 ffmpeg vlc libaacplus libvpx #rtmpdump 
+
+#.SUBDIRS: x264 ffmpeg vlc libaacplus libvpx rtmpdump 
 
 OMADE=./libaacplus/OMakefile
 
 getlibaacplus: libaacplus/download
  cp libaacplus.om ./libaacplus/OMakefile
-
 
 getvlc:
 
@@ -132,6 +175,11 @@ fresh: getlibaacplus getlibvpx getffmpeg getfdk-aac getvlc
 
 # build scenarii
 # what's interesting
+
+ffmpeg:
+ section
+  .SUBDIRS: ffmpeg
+
 ffmpeg_libvpx: libvpx
 
 ffmpeg_libaacplus: libaacplus

@@ -1,3 +1,6 @@
+
+GIT_ENABLED=$(CheckProg git)
+
 Git. =
  class Git
 
@@ -16,10 +19,9 @@ Git. =
  
  clone() =
   git clone --depth $(this.depth) $""$(this.protocol)://$(site)/$(this.user)/$(this.project).git""
+ value $(project).git
  
  print() =
   println ($(this.protocol)://$(this.site)/$(this.user)/$(this.project).git)
-
-
 
 
